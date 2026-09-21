@@ -20,6 +20,8 @@ interface StoreValue {
   setJobStatus: (id: string, status: ServiceJob['status']) => void;
   toggleChecklist: (jobId: string, itemId: string) => void;
   assignDevice: (deviceId: string, staffId: string | null) => void;
+  toggleCoverage: (staffId: string, propertyId: string) => void;
+  reassignJob: (jobId: string, staffId: string) => void;
   startSession: (deviceId: string, jobId: string | null, propertyId: string) => void;
   stopSession: (sessionId: string) => void;
 }
@@ -31,7 +33,7 @@ function load(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as AppState;
   } catch {
-    /* storage bisa diblokir (private mode) — jatuh ke data contoh */
+    /* storage can be blocked (private mode) — fall back to sample data */
   }
   return buildSeedState();
 }
@@ -40,7 +42,7 @@ function loadTheme(): Theme {
   try {
     const raw = localStorage.getItem(THEME_KEY) as Theme | null;
     if (raw === 'light' || raw === 'dark') return raw;
-  } catch { /* abaikan */ }
+  } catch { /* ignore */ }
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -49,12 +51,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(loadTheme);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* abaikan */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* ignore */ }
   }, [state]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem(THEME_KEY, theme); } catch { /* abaikan */ }
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* ignore */ }
   }, [theme]);
 
   const patch = useCallback((fn: (s: AppState) => AppState) => setState((s) => fn(s)), []);
@@ -106,6 +108,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     assignDevice: (deviceId, staffId) =>
       patch((s) => ({ ...s, devices: s.devices.map((d) => (d.id === deviceId ? { ...d, staffId } : d)) })),
 
+    toggleCoverage: (staffId, propertyId) =>
+      patch((s) => ({
+        ...s,
+        staff: s.staff.map((x) =>
+          x.id === staffId
+            ? {
+                ...x,
+                assignedPropertyIds: x.assignedPropertyIds.includes(propertyId)
+                  ? x.assignedPropertyIds.filter((p) => p !== propertyId)
+                  : [...x.assignedPropertyIds, propertyId],
+              }
+            : x,
+        ),
+      })),
+
+    reassignJob: (jobId, staffId) =>
+      patch((s) => ({ ...s, jobs: s.jobs.map((j) => (j.id === jobId ? { ...j, staffId } : j)) })),
+
     startSession: (deviceId, jobId, propertyId) =>
       patch((s) => {
         const session: CamSession = {
@@ -117,7 +137,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           durationMin: 0,
           clips: 0,
           flagged: false,
-          events: [{ t: new Date().toISOString(), type: 'start', note: 'Sesi dimulai manual dari konsol' }],
+          events: [{ t: new Date().toISOString(), type: 'start', note: 'Session started manually from the console' }],
         };
         return {
           ...s,
@@ -135,7 +155,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ? {
                 ...x,
                 durationMin: Math.max(1, Math.round((Date.now() - new Date(x.startedAt).getTime()) / 60_000)),
-                events: [...x.events, { t: new Date().toISOString(), type: 'stop', note: 'Sesi dihentikan dari konsol' }],
+                events: [...x.events, { t: new Date().toISOString(), type: 'stop', note: 'Session stopped from the console' }],
               }
             : x,
         ),
@@ -147,6 +167,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
 export function useStore(): StoreValue {
   const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error('useStore harus dipakai di dalam StoreProvider');
+  if (!ctx) throw new Error('useStore must be used inside StoreProvider');
   return ctx;
 }

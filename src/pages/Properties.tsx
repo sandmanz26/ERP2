@@ -9,9 +9,9 @@ import { lastMonths, monthDate, propertyPnl, revenueIn } from '../lib/metrics';
 import type { Property, PropertyStatus } from '../types';
 
 const STATUS: Record<PropertyStatus, { label: string; tone: 'good' | 'warn' | 'neutral' }> = {
-  active: { label: 'Aktif', tone: 'good' },
-  maintenance: { label: 'Perbaikan', tone: 'warn' },
-  inactive: { label: 'Nonaktif', tone: 'neutral' },
+  active: { label: 'Active', tone: 'good' },
+  maintenance: { label: 'Maintenance', tone: 'warn' },
+  inactive: { label: 'Inactive', tone: 'neutral' },
 };
 
 export default function Properties() {
@@ -35,13 +35,13 @@ export default function Properties() {
   return (
     <>
       <Card>
-        <CardHead title={`${rows.length} unit`} sub="Klik satu unit untuk membuka profil dan konfigurasinya">
+        <CardHead title={`${rows.length} houses`} sub="Select a house to open its profile and configuration">
           <span className="search">
             <Icon name="search" size={14} />
-            <input className="input" placeholder="Cari unit atau lokasi…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 210 }} />
+            <input className="input" placeholder="Search house or location…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 210 }} />
           </span>
-          <select className="select" value={city} onChange={(e) => setCity(e.target.value)} aria-label="Filter kota">
-            <option value="all">Semua kota</option>
+          <select className="select" value={city} onChange={(e) => setCity(e.target.value)} aria-label="Filter by city">
+            <option value="all">All cities</option>
             {cities.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </CardHead>
@@ -50,8 +50,8 @@ export default function Properties() {
           <table className="table">
             <thead>
               <tr>
-                <th>Unit</th><th>Status</th><th className="r">Harga dasar</th><th className="r">Okupansi</th>
-                <th>Tren 6 bln</th><th className="r">Laba bersih</th><th className="r">Margin</th><th />
+                <th>House</th><th>Status</th><th className="r">Base rate</th><th className="r">Occupancy</th>
+                <th>6-mo trend</th><th className="r">Net income</th><th className="r">Margin</th><th />
               </tr>
             </thead>
             <tbody>
@@ -62,7 +62,7 @@ export default function Properties() {
                       <UnitMark name={p.name} accent={p.accent} />
                       <span className="col" style={{ gap: 0 }}>
                         <span className="strong">{p.name}</span>
-                        <span className="tiny muted">{p.type} · {p.bedrooms} kamar · {p.area}</span>
+                        <span className="tiny muted">{p.type} · {p.bedrooms} bd · {p.area}</span>
                       </span>
                     </span>
                   </td>
@@ -92,7 +92,7 @@ export default function Properties() {
                   <td className="r"><Icon name="chevron" size={14} className="muted" /></td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={8}><Empty>Tidak ada unit yang cocok.</Empty></td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8}><Empty>No houses match.</Empty></td></tr>}
             </tbody>
           </table>
         </div>
@@ -126,59 +126,59 @@ function PropertyDrawer({
     <Drawer
       open
       title={property.name}
-      sub={`${property.type} · ${property.bedrooms} kamar · ${property.area}, ${property.city}`}
+      sub={`${property.type} · ${property.bedrooms} bd · ${property.area}, ${property.city}`}
       onClose={onClose}
-      footer={<span className="small muted">Perubahan tersimpan otomatis di browser ini.</span>}
+      footer={<span className="small muted">Changes are saved automatically in this browser.</span>}
     >
       <div className="grid g-2">
         <Card className="stat">
-          <span className="stat-label">Laba bersih bulan ini</span>
+          <span className="stat-label">Net income this month</span>
           <span className="stat-value" style={{ color: pnl.net < 0 ? 'var(--critical-ink)' : undefined }}>
             {rupiah(pnl.net, { compact: true })}
           </span>
-          <span className="stat-foot">margin {pct(pnl.marginPct)}</span>
+          <span className="stat-foot">{pct(pnl.marginPct)} margin</span>
         </Card>
         <Card className="stat">
-          <span className="stat-label">Okupansi</span>
+          <span className="stat-label">Occupancy</span>
           <span className="stat-value">{pct(pnl.occupancyPct)}</span>
-          <span className="stat-foot">target {property.targetOccupancy}% · {pnl.nights} malam</span>
+          <span className="stat-foot">target {property.targetOccupancy}% · {pnl.nights} nights</span>
         </Card>
       </div>
 
       <div>
-        <div className="section-title" style={{ marginBottom: 10 }}><Icon name="tag" size={14} /> Harga & biaya unit</div>
+        <div className="section-title" style={{ marginBottom: 10 }}><Icon name="tag" size={14} /> Rates & fees</div>
         <div className="grid g-2">
-          <Field label="Harga dasar / malam">
+          <Field label="Base rate / night">
             <input className="input num" value={property.basePrice.toLocaleString('id-ID')}
               onChange={(e) => onChange(property.id, { basePrice: num(e.target.value) })} />
           </Field>
-          <Field label="Kenaikan akhir pekan (%)">
+          <Field label="Weekend uplift (%)">
             <input className="input num" type="number" value={property.weekendUpliftPct}
               onChange={(e) => onChange(property.id, { weekendUpliftPct: Number(e.target.value) })} />
           </Field>
-          <Field label="Biaya kebersihan">
+          <Field label="Cleaning fee">
             <input className="input num" value={property.cleaningFee.toLocaleString('id-ID')}
               onChange={(e) => onChange(property.id, { cleaningFee: num(e.target.value) })} />
           </Field>
-          <Field label="Biaya tamu tambahan">
+          <Field label="Extra guest fee">
             <input className="input num" value={property.extraGuestFee.toLocaleString('id-ID')}
               onChange={(e) => onChange(property.id, { extraGuestFee: num(e.target.value) })} />
           </Field>
-          <Field label="Minimum menginap (malam)">
+          <Field label="Minimum stay (nights)">
             <input className="input num" type="number" min={1} value={property.minStay}
               onChange={(e) => onChange(property.id, { minStay: Number(e.target.value) })} />
           </Field>
-          <Field label="Target okupansi (%)">
+          <Field label="Occupancy target (%)">
             <input className="input num" type="number" min={0} max={100} value={property.targetOccupancy}
               onChange={(e) => onChange(property.id, { targetOccupancy: Number(e.target.value) })} />
           </Field>
-          <Field label="Status unit">
+          <Field label="House status">
             <select className="select" value={property.status}
               onChange={(e) => onChange(property.id, { status: e.target.value as PropertyStatus })}>
               {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </Field>
-          <Field label="Kanal aktif">
+          <Field label="Active channels">
             <div className="row-wrap">
               {(['airbnb', 'booking', 'direct'] as const).map((c) => {
                 const on = property.channels.includes(c);
@@ -199,16 +199,16 @@ function PropertyDrawer({
       </div>
 
       <div>
-        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="calendar" size={14} /> Booking terakhir</div>
+        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="calendar" size={14} /> Recent bookings</div>
         <Card>
           <div className="list">
-            {bookings.length === 0 && <Empty>Belum ada booking.</Empty>}
+            {bookings.length === 0 && <Empty>No bookings yet.</Empty>}
             {bookings.map((b) => (
               <div className="list-item" key={b.id}>
                 <div className="col" style={{ gap: 0, minWidth: 0 }}>
                   <span className="small strong truncate">{b.guest}</span>
                   <span className="tiny muted">
-                    {dateLabel(b.checkIn)} – {dateLabel(b.checkOut)} · {b.nights} malam · {b.channel}
+                    {dateLabel(b.checkIn)} – {dateLabel(b.checkOut)} · {b.nights} nights · {b.channel}
                   </span>
                 </div>
                 <span className="spacer small num strong">{rupiah(b.payout, { compact: true })}</span>
@@ -219,10 +219,10 @@ function PropertyDrawer({
       </div>
 
       <div>
-        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="broom" size={14} /> Layanan terakhir</div>
+        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="broom" size={14} /> Recent jobs</div>
         <Card>
           <div className="list">
-            {jobs.length === 0 && <Empty>Belum ada pekerjaan tercatat.</Empty>}
+            {jobs.length === 0 && <Empty>No jobs recorded.</Empty>}
             {jobs.map((j) => (
               <div className="list-item" key={j.id}>
                 <div className="col" style={{ gap: 0, minWidth: 0 }}>
@@ -230,7 +230,7 @@ function PropertyDrawer({
                   <span className="tiny muted">{dateLabel(j.scheduledAt)} · {state.staff.find((s) => s.id === j.staffId)?.name}</span>
                 </div>
                 <span className="spacer small num">{rupiah(j.cost, { compact: true })}</span>
-                {j.sessionId && <Badge tone="info" icon="video">Terekam</Badge>}
+                {j.sessionId && <Badge tone="info" icon="video">Recorded</Badge>}
               </div>
             ))}
           </div>

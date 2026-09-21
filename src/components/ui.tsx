@@ -80,13 +80,13 @@ export function Drawer({
   return (
     <>
       <div className="scrim" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Detail'}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Details'}>
         <div className="drawer-head">
           <div className="col" style={{ gap: 2, minWidth: 0 }}>
             <h2 className="truncate">{title}</h2>
             {sub && <span className="small muted">{sub}</span>}
           </div>
-          <button className="btn ghost icon-btn spacer" onClick={onClose} aria-label="Tutup"><Icon name="x" /></button>
+          <button className="btn ghost icon-btn spacer" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
         <div className="drawer-body">{children}</div>
         {footer && <div className="drawer-foot">{footer}</div>}
@@ -112,7 +112,7 @@ export function Modal({
       <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="card-head">
           <h2>{title}</h2>
-          <button className="btn ghost icon-btn card-actions" onClick={onClose} aria-label="Tutup"><Icon name="x" /></button>
+          <button className="btn ghost icon-btn card-actions" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
         <div className="card-body">{children}</div>
         {footer && <div className="drawer-foot">{footer}</div>}
@@ -137,7 +137,7 @@ export function Avatar({ name }: { name: string }) {
 
 export function Signal({ level }: { level: number }) {
   return (
-    <span className="signal" title={`Sinyal ${level}/4`}>
+    <span className="signal" title={`Signal ${level}/4`}>
       {[1, 2, 3, 4].map((i) => (
         <i key={i} className={i <= level ? 'on' : ''} style={{ height: 3 + i * 2 }} />
       ))}

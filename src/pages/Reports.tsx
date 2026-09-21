@@ -24,7 +24,7 @@ export default function Reports() {
   const mix = channelMix(state.bookings, month);
   const lostToFees = sum(mix.map((m) => m.fee));
 
-  const netSeries = [{ name: 'Laba bersih', color: 'var(--s1)' }];
+  const netSeries = [{ name: 'Net income', color: 'var(--s1)' }];
   const netData = months.map((m) => ({
     label: monthDate(m).toLocaleDateString('id-ID', { month: 'short' }),
     values: [revenueIn(state.bookings, m) - expensesIn(state.expenses, m)],
@@ -39,51 +39,51 @@ export default function Reports() {
   });
 
   const exportPnl = () =>
-    downloadCsv(`laba-rugi-${month}.csv`, rows.map((r) => ({
-      unit: r.property.name,
-      kota: r.property.city,
-      malam_terjual: r.nights,
-      okupansi_persen: r.occupancyPct.toFixed(1),
-      adr: Math.round(r.adr),
-      revpar: Math.round(r.revpar),
-      pendapatan_bersih: r.revenue,
-      biaya: r.expense,
-      laba_bersih: r.net,
-      margin_persen: r.marginPct.toFixed(1),
+    downloadCsv(`pnl-by-house-${month}.csv`, rows.map((r) => ({
+      house: r.property.name,
+      city: r.property.city,
+      nights_sold: r.nights,
+      occupancy_pct: r.occupancyPct.toFixed(1),
+      adr_idr: Math.round(r.adr),
+      revpar_idr: Math.round(r.revpar),
+      net_revenue_idr: r.revenue,
+      expenses_idr: r.expense,
+      net_income_idr: r.net,
+      margin_pct: r.marginPct.toFixed(1),
     })));
 
   const exportBookings = () =>
-    downloadCsv(`booking-${month}.csv`, state.bookings
+    downloadCsv(`bookings-${month}.csv`, state.bookings
       .filter((b) => b.checkIn.slice(0, 7) === month)
       .map((b) => ({
-        kode: b.code,
-        unit: state.properties.find((p) => p.id === b.propertyId)?.name ?? '',
-        tamu: b.guest, kanal: b.channel, check_in: b.checkIn, check_out: b.checkOut,
-        malam: b.nights, bruto: b.gross, komisi: b.channelFee, payout: b.payout, status: b.status,
+        code: b.code,
+        house: state.properties.find((p) => p.id === b.propertyId)?.name ?? '',
+        guest: b.guest, channel: b.channel, check_in: b.checkIn, check_out: b.checkOut,
+        nights: b.nights, gross_idr: b.gross, commission_idr: b.channelFee, payout_idr: b.payout, status: b.status,
       })));
 
   const exportExpenses = () =>
-    downloadCsv(`biaya-${month}.csv`, state.expenses
+    downloadCsv(`expenses-${month}.csv`, state.expenses
       .filter((e) => e.date.slice(0, 7) === month)
       .map((e) => ({
-        tanggal: e.date,
-        unit: state.properties.find((p) => p.id === e.propertyId)?.name ?? '',
-        kategori: e.category, keterangan: e.label, vendor: e.vendor,
-        jenis: e.recurring ? 'rutin' : 'insidental', jumlah: e.amount,
+        date: e.date,
+        house: state.properties.find((p) => p.id === e.propertyId)?.name ?? '',
+        category: e.category, description: e.label, vendor: e.vendor,
+        type: e.recurring ? 'recurring' : 'one-off', amount_idr: e.amount,
       })));
 
   return (
     <>
       <section className="grid g-4">
-        <StatTile label="Pendapatan bersih" value={rupiah(summary.revenue, { compact: true })} foot={`${summary.nights} malam terjual`} />
-        <StatTile label="Laba bersih" value={rupiah(summary.net, { compact: true })} foot={`margin ${pct(summary.marginPct)}`} />
-        <StatTile label="Hilang ke komisi" value={rupiah(lostToFees, { compact: true })} foot="potensi hemat lewat direct booking" />
-        <StatTile label="RevPAR" value={rupiah(summary.revpar, { compact: true })} foot={`${daysInMonth(monthDate(month))} hari × ${state.properties.length} unit`} />
+        <StatTile label="Net revenue" value={rupiah(summary.revenue, { compact: true })} foot={`${summary.nights} nights sold`} />
+        <StatTile label="Net income" value={rupiah(summary.net, { compact: true })} foot={`${pct(summary.marginPct)} margin`} />
+        <StatTile label="Lost to commission" value={rupiah(lostToFees, { compact: true })} foot="what direct bookings would save" />
+        <StatTile label="RevPAR" value={rupiah(summary.revpar, { compact: true })} foot={`${daysInMonth(monthDate(month))} days × ${state.properties.length} houses`} />
       </section>
 
       <section className="grid g-main">
         <Card>
-          <CardHead title="Laba bersih portofolio" sub="Enam bulan terakhir">
+          <CardHead title="Portfolio net income" sub="Last six months">
             <TableToggle open={showTable} onToggle={() => setShowTable((v) => !v)} />
           </CardHead>
           <div className="card-body col" style={{ gap: 12 }}>
@@ -93,9 +93,9 @@ export default function Reports() {
         </Card>
 
         <Card>
-          <CardHead title="Kanal penjualan" sub="Bulan berjalan" />
+          <CardHead title="Sales channels" sub="Current month" />
           <div className="card-body col" style={{ gap: 14 }}>
-            {mix.length === 0 && <Empty>Belum ada booking bulan ini.</Empty>}
+            {mix.length === 0 && <Empty>No bookings this month.</Empty>}
             {mix.map((m) => (
               <div className="col" key={m.channel} style={{ gap: 5 }}>
                 <div className="row small">
@@ -105,7 +105,7 @@ export default function Reports() {
                 <div className="bar-track">
                   <span style={{ width: `${(m.payout / (mix[0]?.payout || 1)) * 100}%`, background: 'var(--s1)' }} />
                 </div>
-                <span className="tiny muted num">{m.count} booking · komisi {rupiah(m.fee, { compact: true })}</span>
+                <span className="tiny muted num">{m.count} bookings · {rupiah(m.fee, { compact: true })} commission</span>
               </div>
             ))}
           </div>
@@ -114,13 +114,13 @@ export default function Reports() {
 
       <section className="grid g-2">
         <Card>
-          <CardHead title="ADR portofolio" sub="Harga rata-rata per malam terjual" />
+          <CardHead title="Portfolio ADR" sub="Average rate per night sold" />
           <div className="card-body">
             <LineTrend data={adrData} series={[{ name: 'ADR', color: 'var(--s3)' }]} format={(v) => compactNumber(v)} height={190} />
           </div>
         </Card>
         <Card>
-          <CardHead title="Okupansi per unit" sub="Bulan berjalan vs target masing-masing unit" />
+          <CardHead title="Occupancy by house" sub="Current month against each house’s own target" />
           <div className="card-body">
             <RankBars
               rows={rows
@@ -140,17 +140,17 @@ export default function Reports() {
       </section>
 
       <Card>
-        <CardHead title="Laba rugi per unit" sub={monthDate(month).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}>
-          <button className="btn sm" onClick={exportPnl}><Icon name="download" size={13} /> Laba rugi</button>
-          <button className="btn sm" onClick={exportBookings}><Icon name="download" size={13} /> Booking</button>
-          <button className="btn sm" onClick={exportExpenses}><Icon name="download" size={13} /> Biaya</button>
+        <CardHead title="Profit and loss by house" sub={monthDate(month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}>
+          <button className="btn sm" onClick={exportPnl}><Icon name="download" size={13} /> P&L</button>
+          <button className="btn sm" onClick={exportBookings}><Icon name="download" size={13} /> Bookings</button>
+          <button className="btn sm" onClick={exportExpenses}><Icon name="download" size={13} /> Expenses</button>
         </CardHead>
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th>Unit</th><th className="r">Malam</th><th className="r">Okupansi</th><th className="r">ADR</th><th className="r">RevPAR</th>
-                <th className="r">Pendapatan</th><th className="r">Biaya</th><th className="r">Laba bersih</th><th className="r">Margin</th>
+                <th>House</th><th className="r">Nights</th><th className="r">Occupancy</th><th className="r">ADR</th><th className="r">RevPAR</th>
+                <th className="r">Net revenue</th><th className="r">Expenses</th><th className="r">Net income</th><th className="r">Margin</th>
               </tr>
             </thead>
             <tbody>
@@ -174,7 +174,7 @@ export default function Reports() {
             </tbody>
             <tfoot>
               <tr>
-                <td className="strong">Total {rows.length} unit</td>
+                <td className="strong">Total · {rows.length} houses</td>
                 <td className="r num strong">{summary.nights}</td>
                 <td className="r num strong">{pct(summary.occupancyPct)}</td>
                 <td className="r num strong">{rupiah(summary.adr, { compact: true })}</td>

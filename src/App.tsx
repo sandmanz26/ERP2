@@ -3,12 +3,15 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Icon, type IconName } from './components/Icon';
 import { useStore } from './store/useStore';
 import { lastMonths, monthDate, monthKeyOf, type MonthKey } from './lib/metrics';
+import { monthName } from './lib/format';
 import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
 import Pricing from './pages/Pricing';
 import Expenses from './pages/Expenses';
 import Services from './pages/Services';
+import Team from './pages/Team';
 import Monitoring from './pages/Monitoring';
+import Financials from './pages/Financials';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
@@ -16,32 +19,36 @@ interface PeriodCtx { month: MonthKey; setMonth: (m: MonthKey) => void; options:
 const PeriodContext = createContext<PeriodCtx | null>(null);
 export function usePeriod(): PeriodCtx {
   const ctx = useContext(PeriodContext);
-  if (!ctx) throw new Error('usePeriod di luar provider');
+  if (!ctx) throw new Error('usePeriod used outside its provider');
   return ctx;
 }
 
 interface NavDef { to: string; label: string; icon: IconName; group: string; }
 
 const NAV: NavDef[] = [
-  { to: '/dashboard', label: 'Ringkasan', icon: 'dashboard', group: 'Portofolio' },
-  { to: '/properties', label: 'Properti', icon: 'house', group: 'Portofolio' },
-  { to: '/pricing', label: 'Harga & Musim', icon: 'tag', group: 'Pendapatan' },
-  { to: '/expenses', label: 'Biaya', icon: 'receipt', group: 'Pendapatan' },
-  { to: '/services', label: 'Layanan', icon: 'broom', group: 'Operasi' },
-  { to: '/monitoring', label: 'Monitoring', icon: 'video', group: 'Operasi' },
-  { to: '/reports', label: 'Laporan', icon: 'chart', group: 'Analitik' },
-  { to: '/settings', label: 'Pengaturan', icon: 'settings', group: 'Analitik' },
+  { to: '/dashboard', label: 'Overview', icon: 'dashboard', group: 'Portfolio' },
+  { to: '/properties', label: 'Houses', icon: 'house', group: 'Portfolio' },
+  { to: '/pricing', label: 'Pricing & seasons', icon: 'tag', group: 'Revenue' },
+  { to: '/expenses', label: 'Expenses', icon: 'receipt', group: 'Revenue' },
+  { to: '/services', label: 'Jobs', icon: 'broom', group: 'Operations' },
+  { to: '/team', label: 'Cleaning team', icon: 'users', group: 'Operations' },
+  { to: '/monitoring', label: 'Monitoring', icon: 'video', group: 'Operations' },
+  { to: '/financials', label: 'Financials', icon: 'receipt', group: 'Analytics' },
+  { to: '/reports', label: 'Performance', icon: 'chart', group: 'Analytics' },
+  { to: '/settings', label: 'Settings', icon: 'settings', group: 'Analytics' },
 ];
 
 const TITLES: Record<string, { title: string; sub: string; period?: boolean }> = {
-  '/dashboard': { title: 'Ringkasan portofolio', sub: 'Kondisi seluruh unit dalam satu layar', period: true },
-  '/properties': { title: 'Properti', sub: 'Profil unit, performa, dan konfigurasi biaya', period: true },
-  '/pricing': { title: 'Harga & musim', sub: 'Harga dasar, aturan musim, dan simulasi margin per malam' },
-  '/expenses': { title: 'Biaya operasional', sub: 'Pengeluaran rutin dan insidental per unit', period: true },
-  '/services': { title: 'Layanan lapangan', sub: 'Cleaning, laundry, perbaikan, dan inspeksi' },
-  '/monitoring': { title: 'Monitoring & body cam', sub: 'Perangkat portabel yang dibawa petugas kebersihan' },
-  '/reports': { title: 'Laporan', sub: 'Laba rugi per unit, okupansi, dan ekspor data', period: true },
-  '/settings': { title: 'Pengaturan', sub: 'Tim, perangkat, preferensi, dan data contoh' },
+  '/dashboard': { title: 'Portfolio overview', sub: 'Every house, one screen', period: true },
+  '/properties': { title: 'Houses', sub: 'Unit profile, performance, and cost configuration', period: true },
+  '/pricing': { title: 'Pricing & seasons', sub: 'Base rates, season rules, and per-booking margin simulation' },
+  '/expenses': { title: 'Operating expenses', sub: 'Recurring and one-off spend per house', period: true },
+  '/services': { title: 'Field jobs', sub: 'Cleaning, laundry, repairs, and inspections' },
+  '/team': { title: 'Cleaning team', sub: 'Who covers which house, workload, and coverage gaps', period: true },
+  '/monitoring': { title: 'Monitoring & body cam', sub: 'Portable cameras carried by the cleaning crew' },
+  '/financials': { title: 'Financial statement', sub: 'Income statement from gross booking value to net income', period: true },
+  '/reports': { title: 'Performance', sub: 'Occupancy, ADR, channel mix, and data export', period: true },
+  '/settings': { title: 'Settings', sub: 'Team, devices, preferences, and sample data' },
 };
 
 export default function App() {
@@ -53,8 +60,11 @@ export default function App() {
   const meta = TITLES[location.pathname] ?? { title: 'Kanopi', sub: '' };
   const openJobs = state.jobs.filter((j) => j.status === 'scheduled' || j.status === 'in_progress' || j.status === 'overdue').length;
   const camAlerts = state.devices.filter((d) => d.status === 'offline' || d.battery < 20).length;
+  const uncovered = state.properties.filter(
+    (p) => !state.staff.some((s) => s.role === 'Cleaner' && s.assignedPropertyIds.includes(p.id)),
+  ).length;
 
-  const counts: Record<string, number> = { '/services': openJobs, '/monitoring': camAlerts };
+  const counts: Record<string, number> = { '/services': openJobs, '/monitoring': camAlerts, '/team': uncovered };
   const groups = [...new Set(NAV.map((n) => n.group))];
 
   return (
@@ -65,7 +75,7 @@ export default function App() {
             <div className="brand-mark">K</div>
             <div>
               <div className="brand-name">Kanopi</div>
-              <div className="brand-sub">Rental ops · {state.properties.length} unit</div>
+              <div className="brand-sub">Rental ops · {state.properties.length} houses</div>
             </div>
           </div>
 
@@ -85,7 +95,7 @@ export default function App() {
           <div className="sidebar-foot">
             <div className="row tiny muted" style={{ padding: '2px 10px' }}>
               <Icon name="shield" size={13} />
-              <span>Data contoh · lokal di browser</span>
+              <span>Sample data · local to this browser</span>
             </div>
           </div>
         </nav>
@@ -98,19 +108,15 @@ export default function App() {
             </div>
             <div className="topbar-actions">
               {meta.period && (
-                <select className="select" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Pilih periode">
-                  {options.map((m) => (
-                    <option key={m} value={m}>
-                      {monthDate(m).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                    </option>
-                  ))}
+                <select className="select" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Select period">
+                  {options.map((m) => <option key={m} value={m}>{monthName(monthDate(m))}</option>)}
                 </select>
               )}
               <button
                 className="btn ghost icon-btn"
                 onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-                title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
               >
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
               </button>
@@ -125,7 +131,9 @@ export default function App() {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/team" element={<Team />} />
               <Route path="/monitoring" element={<Monitoring />} />
+              <Route path="/financials" element={<Financials />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

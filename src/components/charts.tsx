@@ -1,10 +1,11 @@
 import { useState } from 'react';
 
 /* ------------------------------------------------------------------
-   Chart kit — SVG tangan, tanpa dependensi.
-   Aturan yang dipegang: satu sumbu per chart, mark tipis, ujung data
-   membulat 4px, jarak 2px antar-bar, grid resesif, legenda untuk >=2
-   seri, dan tooltip hover di setiap bentuk.
+   Chart kit — hand-rolled SVG, no chart library.
+   Rules held throughout: one axis per chart, thin marks, 4px rounded
+   data ends, a 2px gap between adjacent bars, recessive grid and axes,
+   a legend whenever there are two or more series, and a hover tooltip
+   on every form.
    ------------------------------------------------------------------ */
 
 export interface Series { name: string; color: string; }
@@ -284,8 +285,67 @@ export const SERIES_COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'
 export function TableToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button className="btn ghost sm" onClick={onToggle} aria-expanded={open}>
-      {open ? 'Sembunyikan tabel' : 'Lihat sebagai tabel'}
+      {open ? 'Hide table' : 'View as table'}
     </button>
+  );
+}
+
+/* ---------------- Heatmap (sequential, one hue) ---------------- */
+
+const SEQ = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95'];
+
+export function Heatmap({
+  rows, columns, format, unit = '',
+}: {
+  rows: Array<{ label: string; values: number[] }>;
+  columns: string[];
+  format: (v: number) => string;
+  unit?: string;
+}) {
+  const { setTip, layer } = useTip();
+  // Scale across the observed range, not from zero: occupancy lives in a narrow
+  // band and a zero-anchored ramp would paint every cell the same shade.
+  const all = rows.flatMap((r) => r.values);
+  const max = Math.max(...all, 1);
+  const min = Math.min(...all, max - 1);
+  const span = max - min || 1;
+  const norm = (v: number) => (v - min) / span;
+  const step = (v: number) => SEQ[Math.min(SEQ.length - 1, Math.floor(norm(v) * SEQ.length))];
+
+  return (
+    <>
+      <div className="heat">
+        <div className="heat-row heat-head">
+          <span className="heat-label" />
+          {columns.map((c) => <span className="heat-col" key={c}>{c}</span>)}
+        </div>
+        {rows.map((r) => (
+          <div className="heat-row" key={r.label}>
+            <span className="heat-label truncate" title={r.label}>{r.label}</span>
+            {r.values.map((v, i) => (
+              <span
+                key={i}
+                className="heat-cell"
+                style={{ background: step(v), color: norm(v) > 0.55 ? '#fff' : '#0b0b0b' }}
+                onMouseMove={(e) => setTip({
+                  x: e.clientX, y: e.clientY, title: `${r.label} · ${columns[i]}`,
+                  rows: [{ name: unit || 'Value', value: format(v) }],
+                })}
+                onMouseLeave={() => setTip(null)}
+              >
+                {format(v)}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="row tiny muted" style={{ gap: 6, marginTop: 10 }}>
+        <span>low</span>
+        {SEQ.map((c) => <i key={c} className="swatch" style={{ background: c, width: 22, height: 8 }} />)}
+        <span>high</span>
+      </div>
+      {layer}
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import type { AppState, Booking, Expense, Property } from '../types';
+import type { AppState, Booking, Expense, ExpenseCategory, Property } from '../types';
 import { daysInMonth } from './format';
 
 export type MonthKey = string; // 'YYYY-MM'
@@ -18,7 +18,7 @@ export function monthDate(key: MonthKey): Date {
   return new Date(y, m - 1, 1);
 }
 
-/** Malam terjual pada bulan tertentu — dihitung per malam, bukan per booking. */
+/** Nights sold in a month — counted night by night, not per booking. */
 export function nightsSold(bookings: Booking[], key: MonthKey, propertyId?: string): number {
   let n = 0;
   for (const b of bookings) {
@@ -145,4 +145,119 @@ export function sum(arr: number[]): number {
 export function deltaPct(current: number, previous: number): number | null {
   if (!previous) return null;
   return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+/* ------------------------------------------------------------------
+   Financial statement
+   A real P&L rather than a pile of totals: gross booking value down to
+   net income, with operating costs grouped the way an owner reads them.
+   ------------------------------------------------------------------ */
+
+
+export const EXPENSE_GROUP: Record<ExpenseCategory, 'direct' | 'staff' | 'property' | 'marketing' | 'tax'> = {
+  cleaning: 'direct',
+  laundry: 'direct',
+  supplies: 'direct',
+  utilities: 'direct',
+  payroll: 'staff',
+  ground_rent: 'property',
+  internet: 'property',
+  repairs: 'property',
+  marketing: 'marketing',
+  tax: 'tax',
+};
+
+export interface StatementLine {
+  key: string;
+  label: string;
+  amount: number;
+  kind: 'revenue' | 'deduction' | 'expense' | 'subtotal' | 'total';
+  indent?: boolean;
+}
+
+export interface IncomeStatement {
+  roomRevenue: number;
+  cleaningFees: number;
+  grossBookingValue: number;
+  channelCommission: number;
+  netRevenue: number;
+  byCategory: Array<{ category: ExpenseCategory; amount: number }>;
+  direct: number;
+  staff: number;
+  propertyCost: number;
+  marketing: number;
+  operatingExpenses: number;
+  operatingIncome: number;
+  tax: number;
+  netIncome: number;
+  netMarginPct: number;
+  nights: number;
+}
+
+export function incomeStatement(state: AppState, key: MonthKey, propertyId?: string): IncomeStatement {
+  const booked = state.bookings.filter(
+    (b) => b.status !== 'cancelled' && b.checkIn.slice(0, 7) === key && (!propertyId || b.propertyId === propertyId),
+  );
+  const cleaningFees = sum(booked.map((b) => b.cleaningFee));
+  const grossBookingValue = sum(booked.map((b) => b.gross));
+  const channelCommission = sum(booked.map((b) => b.channelFee));
+  const roomRevenue = grossBookingValue - cleaningFees;
+  const netRevenue = grossBookingValue - channelCommission;
+
+  const rows = expenseByCategory(state.expenses, key, propertyId) as Array<{ category: ExpenseCategory; amount: number }>;
+  const group = (g: string) => sum(rows.filter((r) => EXPENSE_GROUP[r.category] === g).map((r) => r.amount));
+
+  const direct = group('direct');
+  const staff = group('staff');
+  const propertyCost = group('property');
+  const marketing = group('marketing');
+  const tax = group('tax');
+  const operatingExpenses = direct + staff + propertyCost + marketing;
+  const operatingIncome = netRevenue - operatingExpenses;
+  const netIncome = operatingIncome - tax;
+
+  return {
+    roomRevenue,
+    cleaningFees,
+    grossBookingValue,
+    channelCommission,
+    netRevenue,
+    byCategory: rows,
+    direct,
+    staff,
+    propertyCost,
+    marketing,
+    operatingExpenses,
+    operatingIncome,
+    tax,
+    netIncome,
+    netMarginPct: netRevenue > 0 ? (netIncome / netRevenue) * 100 : 0,
+    nights: nightsSold(state.bookings, key, propertyId),
+  };
+}
+
+export function statementLines(s: IncomeStatement): StatementLine[] {
+  const cat = (c: ExpenseCategory) => s.byCategory.find((r) => r.category === c)?.amount ?? 0;
+  return [
+    { key: 'room', label: 'Room revenue', amount: s.roomRevenue, kind: 'revenue', indent: true },
+    { key: 'fees', label: 'Cleaning fees charged', amount: s.cleaningFees, kind: 'revenue', indent: true },
+    { key: 'gbv', label: 'Gross booking value', amount: s.grossBookingValue, kind: 'subtotal' },
+    { key: 'comm', label: 'Channel commission', amount: -s.channelCommission, kind: 'deduction', indent: true },
+    { key: 'net', label: 'Net revenue', amount: s.netRevenue, kind: 'subtotal' },
+    { key: 'g-direct', label: 'Direct operating cost', amount: -s.direct, kind: 'expense' },
+    { key: 'cleaning', label: 'Cleaning crew', amount: -cat('cleaning'), kind: 'expense', indent: true },
+    { key: 'laundry', label: 'Laundry', amount: -cat('laundry'), kind: 'expense', indent: true },
+    { key: 'supplies', label: 'Guest supplies', amount: -cat('supplies'), kind: 'expense', indent: true },
+    { key: 'utilities', label: 'Utilities', amount: -cat('utilities'), kind: 'expense', indent: true },
+    { key: 'g-staff', label: 'Payroll', amount: -s.staff, kind: 'expense' },
+    { key: 'g-prop', label: 'Property cost', amount: -s.propertyCost, kind: 'expense' },
+    { key: 'rent', label: 'Ground rent', amount: -cat('ground_rent'), kind: 'expense', indent: true },
+    { key: 'internet', label: 'Internet', amount: -cat('internet'), kind: 'expense', indent: true },
+    { key: 'repairs', label: 'Repairs', amount: -cat('repairs'), kind: 'expense', indent: true },
+    { key: 'g-mkt', label: 'Marketing', amount: -s.marketing, kind: 'expense' },
+    { key: 'opex', label: 'Total operating expenses', amount: -s.operatingExpenses, kind: 'subtotal' },
+    { key: 'opinc', label: 'Operating income', amount: s.operatingIncome, kind: 'subtotal' },
+    { key: 'tax', label: 'Local lodging tax', amount: -s.tax, kind: 'deduction', indent: true },
+    { key: 'netinc', label: 'Net income', amount: s.netIncome, kind: 'total' },
+  ];
 }

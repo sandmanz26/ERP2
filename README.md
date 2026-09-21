@@ -1,59 +1,62 @@
-# Kanopi — Rental Ops untuk Pemilik 10+ Unit Airbnb
+# Kanopi — Rental Ops for Airbnb Owners with 10+ Houses
 
-Konsol operasi sewa harian: **harga, biaya, layanan lapangan, monitoring, dan body cam portabel** yang dibawa petugas kebersihan — dalam satu layar.
+An operations console for short-term rental owners: **pricing, cost, financial statements, field jobs, cleaning coverage, and the portable body cams the cleaning crew carries** — on one screen.
 
-> **Frontend-only.** Tidak ada backend. Seluruh data adalah data contoh yang dibangkitkan secara deterministik di browser dan disimpan di `localStorage`. Tidak ada panggilan jaringan, tidak ada autentikasi, tidak ada integrasi OTA.
+> **Frontend only.** No backend. All data is sample data generated deterministically in the browser and kept in `localStorage`. No network calls, no authentication, no OTA integration.
 
-## Menjalankan
+## Running it
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm run build    # keluaran statis di dist/
-npm run preview  # menyajikan hasil build
+npm run build    # static output in dist/
+npm run preview  # serve the build
 ```
 
-Butuh Node 18+. Tanpa variabel lingkungan, tanpa layanan eksternal.
+Node 18+. No environment variables, no external services.
 
-## Modul
+## Modules
 
-| Rute | Isi |
+| Route | What it holds |
 |---|---|
-| `/dashboard` | KPI portofolio, pendapatan vs biaya, okupansi, daftar "perlu perhatian", jadwal hari ini, performa per unit |
-| `/properties` | Daftar unit + panel detail: performa, konfigurasi harga & biaya, kanal aktif, riwayat booking dan layanan |
-| `/pricing` | Harga dasar, kenaikan akhir pekan, aturan musim (CRUD), kalender harga per malam, simulator harga→laba |
-| `/expenses` | Biaya rutin & insidental, rasio biaya, biaya per malam terjual, rincian per kategori dan per unit, input biaya baru |
-| `/services` | Papan pekerjaan cleaning/laundry/perbaikan/inspeksi, checklist dengan langkah wajib bukti kamera |
-| `/monitoring` | Dinding pantau body cam, registri perangkat, penugasan ke petugas, mulai/hentikan sesi, riwayat & kronologi sesi |
-| `/reports` | Laba rugi per unit, kanal penjualan, ADR, okupansi vs target, ekspor CSV |
-| `/settings` | Tema, tim lapangan, perangkat terdaftar, reset data, batasan versi ini |
+| `/dashboard` | Portfolio KPIs, **occupancy per house** (vs each house's target, plus a six-month occupancy trail), revenue vs expenses, attention list, today's schedule, per-house performance with the assigned cleaner |
+| `/properties` | House list and detail panel: performance, rate and fee configuration, active channels, recent bookings and jobs |
+| `/pricing` | Base rate, weekend uplift, season rules (CRUD), nightly rate calendar, and a price→net-income simulator per booking |
+| `/expenses` | Recurring and one-off spend, cost ratio, cost per night sold, breakdown by category and by house, expense entry |
+| `/services` | Job board for cleaning, laundry, repairs, and inspections, with checklists whose key steps require camera proof |
+| `/team` | **Cleaning coverage**: who covers which house, a clickable coverage matrix, gaps, workload balance, payable per person, and job reassignment |
+| `/monitoring` | Camera wall, device registry, pairing devices to people, start/stop sessions, session timeline and anomalies |
+| `/financials` | **Income statement** from gross booking value to net income, month-over-month change, six-month trend, cost structure, net income by house, CSV export |
+| `/reports` | Occupancy, ADR, RevPAR, channel mix, P&L by house, CSV export |
+| `/settings` | Theme, field team, registered devices, data reset, and a plain list of what this build does not do |
 
-## Arsitektur
+## Architecture
 
 ```
 src/
-  types.ts              model domain (properti, booking, biaya, job, device, sesi kamera)
+  types.ts              domain model (house, booking, expense, job, staff, device, camera session)
   lib/
-    rng.ts              PRNG deterministik — data contoh selalu sama
-    seed.ts             generator data contoh + rumus harga per malam
-    metrics.ts          okupansi, ADR, RevPAR, laba rugi per unit
-    format.ts           Rupiah, tanggal, waktu relatif
-    csv.ts              ekspor CSV sisi klien
-  store/useStore.tsx    state global + persistensi localStorage
-  components/           primitif UI, ikon, dan chart kit SVG (tanpa library chart)
-  pages/                delapan halaman modul
-  styles.css            design token + layout
+    rng.ts              deterministic PRNG — the sample data is identical on every load
+    seed.ts             sample data generator, coverage roster, and the nightly rate formula
+    metrics.ts          occupancy, ADR, RevPAR, per-house P&L, and the income statement
+    format.ts           currency, dates, relative time
+    csv.ts              client-side CSV export
+  store/useStore.tsx    global state and localStorage persistence
+  components/           UI primitives, icons, and an SVG chart kit (no chart library)
+  pages/                the ten module pages
+  styles.css            design tokens and layout
 ```
 
-**Keputusan teknis**
+**Technical decisions**
 
-- Tidak memakai library chart. Chart dibuat sebagai SVG agar mark, jarak antar-bar, dan tooltip mengikuti aturan visual yang sama di mode terang dan gelap.
-- Palet seri data dipilih dari slot kategorikal yang tervalidasi keterbacaannya untuk buta warna; status (baik/peringatan/kritis) selalu disertai ikon dan label, tidak pernah warna saja.
-- `localStorage` dibungkus `try/catch` — aplikasi tetap jalan saat penyimpanan diblokir (mode privat).
-- Tema mengikuti preferensi sistem, dapat ditimpa lewat tombol di topbar.
+- No chart library. Charts are hand-built SVG so marks, bar spacing, and tooltips follow one set of rules in both light and dark mode.
+- The categorical series palette is validated for colour-vision deficiency; status (good / warning / critical) always ships with an icon and a label, never colour alone.
+- The occupancy heatmap scales across the observed range rather than from zero — occupancy lives in a narrow band and a zero-anchored ramp would flatten it.
+- `localStorage` access is wrapped in `try/catch`, so the app still runs when storage is blocked (private mode).
+- Theme follows the OS preference and can be overridden from the top bar.
 
-## Yang belum ada
+## What it does not do
 
-Lihat halaman **Pengaturan → Batasan versi ini**. Ringkasnya: belum ada server, integrasi Airbnb/Booking.com, streaming kamera sungguhan, autentikasi, dan rekonsiliasi payout.
+See **Settings → What this build does not do**. In short: no server, no Airbnb/Booking.com integration, no real camera streaming, no authentication, no payout reconciliation.
 
-Latar produk dan urutan pembangunan ada di [`docs/02-kanopi-product-brief.md`](docs/02-kanopi-product-brief.md).
+Product background and build order: [`docs/02-kanopi-product-brief.md`](docs/02-kanopi-product-brief.md).

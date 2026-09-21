@@ -9,16 +9,16 @@ import { expenseByCategory, expensesIn, lastMonths, monthDate, nightsSold, reven
 import type { ExpenseCategory } from '../types';
 
 const CATEGORIES: Array<{ key: ExpenseCategory; label: string }> = [
-  { key: 'utilitas', label: 'Utilitas' },
-  { key: 'kebersihan', label: 'Kebersihan' },
+  { key: 'utilities', label: 'Utilities' },
+  { key: 'cleaning', label: 'Cleaning' },
   { key: 'laundry', label: 'Laundry' },
-  { key: 'perbaikan', label: 'Perbaikan' },
-  { key: 'perlengkapan', label: 'Perlengkapan' },
-  { key: 'gaji', label: 'Gaji' },
+  { key: 'repairs', label: 'Repairs' },
+  { key: 'supplies', label: 'Guest supplies' },
+  { key: 'payroll', label: 'Payroll' },
   { key: 'internet', label: 'Internet' },
-  { key: 'pajak', label: 'Pajak' },
-  { key: 'sewa_lahan', label: 'Sewa lahan' },
-  { key: 'pemasaran', label: 'Pemasaran' },
+  { key: 'tax', label: 'Lodging tax' },
+  { key: 'ground_rent', label: 'Ground rent' },
+  { key: 'marketing', label: 'Marketing' },
 ];
 
 const catLabel = (k: string) => CATEGORIES.find((c) => c.key === k)?.label ?? k;
@@ -41,8 +41,8 @@ export default function Expenses() {
   const breakdown = expenseByCategory(state.expenses, month, propFilter === 'all' ? undefined : propFilter);
 
   const trendSeries = [
-    { name: 'Rutin', color: 'var(--s1)' },
-    { name: 'Insidental', color: 'var(--s2)' },
+    { name: 'Recurring', color: 'var(--s1)' },
+    { name: 'One-off', color: 'var(--s2)' },
   ];
   const trend = months.map((m) => {
     const rows = state.expenses.filter((e) => e.date.slice(0, 7) === m && (propFilter === 'all' || e.propertyId === propFilter));
@@ -68,56 +68,56 @@ export default function Expenses() {
   return (
     <>
       <section className="grid g-4">
-        <StatTile label="Total biaya" value={rupiah(total, { compact: true })} foot={`${rows.length} catatan`} />
-        <StatTile label="Rasio biaya" value={revenue ? `${((total / revenue) * 100).toFixed(0)}%` : '—'} foot="terhadap pendapatan bersih" />
-        <StatTile label="Biaya per malam terjual" value={nights ? rupiah(total / nights, { compact: true }) : '—'} foot={`${nights} malam terjual`} />
-        <StatTile label="Porsi biaya rutin" value={total ? `${((recurring / total) * 100).toFixed(0)}%` : '—'} foot="sisanya insidental" />
+        <StatTile label="Total expenses" value={rupiah(total, { compact: true })} foot={`${rows.length} entries`} />
+        <StatTile label="Cost ratio" value={revenue ? `${((total / revenue) * 100).toFixed(0)}%` : '—'} foot="of net revenue" />
+        <StatTile label="Cost per night sold" value={nights ? rupiah(total / nights, { compact: true }) : '—'} foot={`${nights} nights sold`} />
+        <StatTile label="Recurring share" value={total ? `${((recurring / total) * 100).toFixed(0)}%` : '—'} foot="the rest is one-off" />
       </section>
 
       <section className="grid g-main">
         <Card>
-          <CardHead title="Tren biaya" sub="Rutin vs insidental, enam bulan terakhir" />
+          <CardHead title="Expense trend" sub="Recurring vs one-off, last six months" />
           <div className="card-body col" style={{ gap: 12 }}>
             <Legend series={trendSeries} />
             <GroupedBars data={trend} series={trendSeries} format={(v) => compactNumber(v)} stacked height={200} />
           </div>
         </Card>
         <Card>
-          <CardHead title="Kategori terbesar" sub="Bulan berjalan" />
+          <CardHead title="Largest categories" sub="Current month" />
           <div className="card-body">
             {breakdown.length === 0
-              ? <Empty>Belum ada biaya pada periode ini.</Empty>
+              ? <Empty>No expenses in this period.</Empty>
               : <RankBars rows={breakdown.map((b) => ({ label: catLabel(b.category), value: b.amount }))} format={(v) => rupiah(v, { compact: true })} />}
           </div>
         </Card>
       </section>
 
       <Card>
-        <CardHead title="Biaya per unit" sub="Bulan berjalan" />
+        <CardHead title="Expenses by house" sub="Current month" />
         <div className="card-body">
           <RankBars rows={perUnit} format={(v) => rupiah(v, { compact: true })} rowHeight={26} />
         </div>
       </Card>
 
       <Card>
-        <CardHead title="Catatan biaya" sub={`${rows.length} baris`}>
-          <select className="select" value={propFilter} onChange={(e) => setPropFilter(e.target.value)} aria-label="Filter unit">
-            <option value="all">Semua unit</option>
+        <CardHead title="Expense log" sub={`${rows.length} rows`}>
+          <select className="select" value={propFilter} onChange={(e) => setPropFilter(e.target.value)} aria-label="Filter by house">
+            <option value="all">All houses</option>
             {state.properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <select className="select" value={catFilter} onChange={(e) => setCatFilter(e.target.value)} aria-label="Filter kategori">
-            <option value="all">Semua kategori</option>
+          <select className="select" value={catFilter} onChange={(e) => setCatFilter(e.target.value)} aria-label="Filter by category">
+            <option value="all">All categories</option>
             {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
-          <button className="btn primary sm" onClick={() => setAdding(true)}><Icon name="plus" size={14} /> Catat biaya</button>
+          <button className="btn primary sm" onClick={() => setAdding(true)}><Icon name="plus" size={14} /> Log expense</button>
         </CardHead>
         <div className="table-wrap">
           <table className="table">
             <thead>
-              <tr><th>Tanggal</th><th>Keterangan</th><th>Unit</th><th>Kategori</th><th>Vendor</th><th>Jenis</th><th className="r">Jumlah</th><th /></tr>
+              <tr><th>Date</th><th>Description</th><th>House</th><th>Category</th><th>Vendor</th><th>Type</th><th className="r">Amount</th><th /></tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={8}><Empty>Tidak ada catatan yang cocok.</Empty></td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8}><Empty>No entries match.</Empty></td></tr>}
               {rows.map((e) => (
                 <tr key={e.id}>
                   <td className="small num dim">{dateLabel(e.date)}</td>
@@ -125,10 +125,10 @@ export default function Expenses() {
                   <td className="small dim">{state.properties.find((p) => p.id === e.propertyId)?.name ?? '—'}</td>
                   <td><Badge>{catLabel(e.category)}</Badge></td>
                   <td className="small dim">{e.vendor}</td>
-                  <td>{e.recurring ? <Badge tone="info">Rutin</Badge> : <Badge tone="warn">Insidental</Badge>}</td>
+                  <td>{e.recurring ? <Badge tone="info">Recurring</Badge> : <Badge tone="warn">One-off</Badge>}</td>
                   <td className="r num strong">{rupiah(e.amount)}</td>
                   <td className="r">
-                    <button className="btn ghost sm danger" onClick={() => removeExpense(e.id)} aria-label="Hapus biaya">
+                    <button className="btn ghost sm danger" onClick={() => removeExpense(e.id)} aria-label="Delete expense">
                       <Icon name="trash" size={14} />
                     </button>
                   </td>
@@ -149,7 +149,7 @@ function AddExpense({
 }: { open: boolean; onClose: () => void; onSave: (e: Parameters<ReturnType<typeof useStore>['addExpense']>[0]) => void }) {
   const { state } = useStore();
   const [propertyId, setPropertyId] = useState(state.properties[0]?.id ?? '');
-  const [category, setCategory] = useState<ExpenseCategory>('perbaikan');
+  const [category, setCategory] = useState<ExpenseCategory>('repairs');
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(isoDate(new Date()));
@@ -161,41 +161,41 @@ function AddExpense({
 
   return (
     <Modal
-      open={open} title="Catat biaya baru" onClose={onClose}
+      open={open} title="Log a new expense" onClose={onClose}
       footer={
         <>
           <button
             className="btn primary" disabled={!valid}
             onClick={() => {
-              onSave({ propertyId, category, label: label.trim(), amount: value, date, vendor: vendor.trim() || 'Tanpa vendor', recurring });
+              onSave({ propertyId, category, label: label.trim(), amount: value, date, vendor: vendor.trim() || 'No vendor', recurring });
               setLabel(''); setAmount(''); setVendor('');
             }}
-          >Simpan</button>
-          <button className="btn ghost" onClick={onClose}>Batal</button>
+          >Save</button>
+          <button className="btn ghost" onClick={onClose}>Cancel</button>
         </>
       }
     >
       <div className="grid g-2">
-        <Field label="Unit">
+        <Field label="House">
           <select className="select" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
             {state.properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
-        <Field label="Kategori">
+        <Field label="Category">
           <select className="select" value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
             {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
         </Field>
-        <Field label="Keterangan"><input className="input" value={label} placeholder="Servis AC kamar utama" onChange={(e) => setLabel(e.target.value)} /></Field>
-        <Field label="Jumlah (Rp)" hint={value ? rupiah(value) : 'angka saja'}>
+        <Field label="Description"><input className="input" value={label} placeholder="Master bedroom AC service" onChange={(e) => setLabel(e.target.value)} /></Field>
+        <Field label="Amount (IDR)" hint={value ? rupiah(value) : 'digits only'}>
           <input className="input num" value={amount} placeholder="750000" onChange={(e) => setAmount(e.target.value)} />
         </Field>
-        <Field label="Tanggal"><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-        <Field label="Vendor"><input className="input" value={vendor} placeholder="Bengkel Pak Ujang" onChange={(e) => setVendor(e.target.value)} /></Field>
+        <Field label="Date"><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+        <Field label="Vendor"><input className="input" value={vendor} placeholder="Ujang Workshop" onChange={(e) => setVendor(e.target.value)} /></Field>
       </div>
       <label className="row small" style={{ marginTop: 12, cursor: 'pointer' }}>
         <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
-        Biaya rutin bulanan
+        Recurring monthly expense
       </label>
     </Modal>
   );

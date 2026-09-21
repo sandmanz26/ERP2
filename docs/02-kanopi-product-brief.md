@@ -1,74 +1,75 @@
 # Kanopi — Product Brief
 
-> Sistem manajemen sewa untuk pemilik Airbnb dengan **lebih dari 10 rumah**.
-> Versi ini: web, frontend-only, data contoh di browser.
+> A rental management system for Airbnb owners running **more than 10 houses**.
+> This build: web, frontend only, sample data in the browser.
 
 ---
 
-## 1. Siapa penggunanya
+## 1. Who it is for
 
-**Owner-operator dengan 10–40 unit.** Bukan pengelola satu villa (belum sakit), bukan chain hotel (punya PMS sendiri). Ciri khasnya:
+**Owner-operators with 10–40 houses.** Not the single-villa host (not hurting yet), not a hotel chain (already has a PMS). The profile:
 
-- Listing tersebar di beberapa kanal; Airbnb dominan, sisanya Booking.com dan direct.
-- Punya 3–8 orang di lapangan: cleaning, laundry, teknisi, satu supervisor.
-- Tahu omzetnya, **tidak tahu laba per unit**. Biaya tercecer di WhatsApp, nota, dan tiga file Excel.
-- Tidak berada di lokasi. Kendali atas apa yang benar-benar terjadi di dalam rumah = nol.
+- Listings spread across channels; Airbnb dominant, the rest Booking.com and direct.
+- Three to eight people in the field: cleaners, laundry, technicians, one supervisor.
+- Knows revenue, **does not know profit per house**. Cost is scattered across WhatsApp, paper receipts, and three spreadsheets.
+- Not on site. Visibility into what actually happens inside the house is zero.
 
-Pada 10 unit ke atas, dua hal patah bersamaan: **uangnya tidak lagi bisa dilacak di kepala**, dan **kualitas tidak lagi bisa diawasi dengan datang sendiri**. Kanopi menyerang tepat dua titik itu.
+Past ten houses two things break at once: **the money no longer fits in your head**, and **quality can no longer be checked by showing up**. Kanopi attacks exactly those two.
 
-## 2. Masalah yang dikerjakan
+## 2. The problems it works on
 
-| # | Masalah | Wujudnya di produk |
+| # | Problem | How it shows up in the product |
 |---|---|---|
-| 1 | Harga ditetapkan sekali lalu dilupakan; akhir pekan dan musim ramai tidak dimanfaatkan | Harga dasar + kenaikan akhir pekan + aturan musim, terlihat sebagai kalender harga per malam |
-| 2 | Owner tahu omzet, tidak tahu **laba** | Laba rugi per unit: pendapatan setelah komisi − biaya, margin, ADR, RevPAR |
-| 3 | Biaya bocor tanpa jejak | Pencatatan biaya rutin vs insidental, rasio biaya, biaya per malam terjual, peringkat kategori dan unit |
-| 4 | Satu booking bisa merugi tanpa disadari (diskon + komisi + biaya kebersihan) | Simulator: dari harga tamu sampai laba bersih per booking, lengkap dengan komisi kanal dan biaya variabel |
-| 5 | Pekerjaan lapangan tidak terverifikasi | Papan pekerjaan dengan checklist; langkah tertentu ditandai wajib bukti kamera |
-| 6 | Tidak ada mata di dalam rumah | Body cam portabel yang dibawa petugas: sesi terekam per pekerjaan, kronologi, penandaan anomali |
+| 1 | Rates are set once and forgotten; weekends and peak seasons are left on the table | Base rate + weekend uplift + season rules, shown as a nightly rate calendar |
+| 2 | The owner knows revenue, not **profit** | A real income statement: gross booking value → commission → operating cost → tax → net income, per house and consolidated |
+| 3 | Cost leaks without a trail | Recurring vs one-off expense log, cost ratio, cost per night sold, ranked by category and by house |
+| 4 | A single booking can lose money without anyone noticing | Simulator: from what the guest pays down to net income, with commission and variable cost laid out |
+| 5 | Nobody knows who is responsible for which house | Coverage matrix of crew against houses, coverage gaps surfaced as critical alerts, workload balance, per-person payable, job reassignment |
+| 6 | Field work is unverified, and there are no eyes inside the house | Job checklists where key steps require camera proof, plus portable body cams recording one session per job |
+| 7 | Occupancy is a portfolio-level number, so weak houses hide behind strong ones | Occupancy per house against each house's own target, plus a six-month occupancy trail across the portfolio |
 
-## 3. Kenapa body cam portabel, bukan CCTV terpasang
+## 3. Why portable body cams, not fixed CCTV
 
-CCTV permanen di dalam rumah sewa **bermasalah secara hukum dan kepercayaan tamu** — Airbnb melarang kamera di ruang interior. Maka kameranya tidak boleh tinggal di rumah; kamera **datang bersama petugas dan pergi bersama petugas**.
+Permanent cameras inside a rental are **a legal and trust problem** — Airbnb bans cameras in interior spaces. So the camera must not live in the house; it **arrives with the cleaner and leaves with the cleaner**.
 
-Konsekuensi desain yang diambil:
+Design consequences:
 
-- Kamera adalah milik operasi, bukan milik properti. Registrinya berisi perangkat → petugas, bukan perangkat → ruangan.
-- Rekaman terikat ke **sesi kerja**, bukan ke rentang waktu 24 jam. Satu sesi = satu pekerjaan.
-- Nilainya bukan pengawasan terus-menerus, melainkan **bukti**: kondisi awal, langkah kritis, kondisi akhir, dan kunci pintu — persis yang dibutuhkan saat tamu mengklaim barang hilang atau rumah kotor.
-- Anomali (kamera tertutup, perangkat keluar radius properti, sesi berhenti mendadak) ditandai untuk ditinjau **sebelum upah disetujui**.
+- The camera belongs to the operation, not the property. The registry maps device → person, not device → room.
+- Footage is bound to a **work session**, not to a 24-hour window. One session equals one job.
+- The value is not continuous surveillance but **evidence**: arrival condition, critical steps, final condition, door locked — exactly what is needed when a guest claims a missing item or a dirty house.
+- Anomalies (lens covered, device leaving the property geofence, a session ending abruptly) are flagged for review **before the job is paid**.
 
-## 4. Ruang lingkup versi ini
+## 4. Scope of this build
 
-**Termasuk:** delapan modul di README — ringkasan, properti, harga & musim, biaya, layanan, monitoring, laporan, pengaturan. Semua interaktif: ubah harga, tambah aturan musim, catat biaya, ubah status pekerjaan, centang checklist, pasangkan perangkat, mulai/hentikan sesi, ekspor CSV.
+**Included:** the ten modules listed in the README. All of them are interactive: change rates, add season rules, log expenses, move jobs across the board, tick checklists, assign a cleaner to a house, reassign a job, pair a device, start and stop sessions, export CSV.
 
-**Sengaja tidak termasuk:** server, autentikasi, integrasi kanal, streaming kamera sungguhan, rekonsiliasi payout, akuntansi penuh, aplikasi petugas. Semua tercantum terbuka di halaman Pengaturan agar tidak ada yang salah kira saat demo.
+**Deliberately excluded:** server, authentication, channel integration, real camera streaming, payout reconciliation, full accounting, crew mobile app. All of it is listed openly in Settings so nothing is oversold in a demo.
 
-## 5. Prinsip desain yang dipegang
+## 5. Design principles held
 
-1. **Angka yang diputuskan, bukan angka yang ada.** Setiap layar menjawab satu pertanyaan owner: unit mana yang rugi, biaya apa yang membengkak, pekerjaan mana yang terlewat.
-2. **Kerugian ditampilkan, tidak disembunyikan.** Laba negatif berwarna kritis, margin tipis diberi lencana, okupansi di bawah target muncul sebagai peringatan.
-3. **Status tidak pernah hanya warna.** Setiap lencana punya ikon dan teks — syarat keterbacaan bagi pengguna buta warna dan saat dicetak.
-4. **Satu sumbu per chart.** Dua satuan berbeda (Rupiah dan persen) tidak pernah ditumpuk di satu grafik.
-5. **Kepadatan tinggi, tanpa berisik.** Tabel rapat dengan angka rata kanan tabular; grid dan sumbu dibuat resesif agar data yang menonjol.
+1. **Numbers that get decided on, not numbers that exist.** Each screen answers one owner question: which house loses money, which cost is swelling, which job was missed, who covers which house.
+2. **Losses are shown, not hidden.** Negative net income is coloured critical, thin margins get a badge, occupancy below target raises a warning, and an uncovered house is a critical alert.
+3. **Status is never colour alone.** Every badge carries an icon and a word — required for colour-blind readers and for print.
+4. **One axis per chart.** Rupiah and percent never share a scale.
+5. **Dense but quiet.** Tight tables with right-aligned tabular figures; grid lines and axes stay recessive so the data reads first.
 
-## 6. Urutan pembangunan berikutnya
+## 6. Build order from here
 
 ```
-Fase 1 (sudah, versi ini) : konsol read-write lokal — harga, biaya, layanan, monitoring
-Fase 2                    : backend + autentikasi + peran (owner, supervisor, petugas)
-                            aplikasi petugas di HP: checklist, foto, mulai/stop sesi kamera
-Fase 3                    : integrasi kanal (Airbnb/Booking lewat channel manager),
-                            rekonsiliasi payout vs booking vs komisi
-Fase 4                    : gateway kamera nyata (WebRTC/RTSP), penyimpanan klip berbatas waktu,
-                            kebijakan retensi dan akses
-Fase 5                    : laporan pemilik (bila unit milik pihak ketiga), pajak daerah, akuntansi
+Phase 1 (this build) : local read-write console — pricing, cost, financials, coverage, monitoring
+Phase 2              : backend, auth, roles (owner, supervisor, crew)
+                       crew mobile app: checklist, photos, start/stop camera session
+Phase 3              : channel integration (Airbnb/Booking via a channel manager),
+                       payout reconciliation against bookings and commission
+Phase 4              : real camera gateway (WebRTC/RTSP), time-bounded clip storage,
+                       retention and access policy
+Phase 5              : owner statements (for third-party-owned houses), local tax, full accounting
 ```
 
-Yang dikerjakan lebih dulu bukan yang paling canggih, melainkan yang paling cepat menghentikan kebocoran uang: **harga dan biaya dulu, kamera menyusul sebagai penjaga kualitas.**
+What comes first is not the most impressive piece but the one that stops the bleeding soonest: **pricing and cost first, cameras after, as the quality guard.**
 
-## 7. Ukuran keberhasilan
+## 7. What success looks like
 
-- Owner bisa menjawab "unit mana yang rugi bulan lalu" dalam < 30 detik tanpa membuka Excel.
-- Setiap pekerjaan cleaning punya bukti visual awal dan akhir.
-- Selisih antara biaya tercatat dan biaya sebenarnya menyusut di bawah 10% dalam dua bulan pemakaian.
+- The owner can answer "which house lost money last month" in under 30 seconds without opening a spreadsheet.
+- Every house has a named cleaner, and every cleaning job has visual proof of arrival and departure condition.
+- The gap between recorded cost and actual cost falls below 10% within two months of use.

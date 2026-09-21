@@ -9,15 +9,15 @@ import type { JobStatus, JobType, ServiceJob } from '../types';
 const TYPE: Record<JobType, { label: string; icon: IconName; color: string }> = {
   cleaning: { label: 'Cleaning', icon: 'broom', color: 'var(--s1)' },
   laundry: { label: 'Laundry', icon: 'list', color: 'var(--s3)' },
-  maintenance: { label: 'Perbaikan', icon: 'wrench', color: 'var(--s2)' },
-  inspection: { label: 'Inspeksi', icon: 'shield', color: 'var(--s7)' },
+  maintenance: { label: 'Repair', icon: 'wrench', color: 'var(--s2)' },
+  inspection: { label: 'Inspection', icon: 'shield', color: 'var(--s7)' },
 };
 
 const COLUMNS: Array<{ key: JobStatus; label: string; tone: 'neutral' | 'info' | 'good' | 'crit' }> = [
-  { key: 'scheduled', label: 'Terjadwal', tone: 'neutral' },
-  { key: 'in_progress', label: 'Berjalan', tone: 'info' },
-  { key: 'done', label: 'Selesai', tone: 'good' },
-  { key: 'overdue', label: 'Terlewat', tone: 'crit' },
+  { key: 'scheduled', label: 'Scheduled', tone: 'neutral' },
+  { key: 'in_progress', label: 'Running', tone: 'info' },
+  { key: 'done', label: 'Done', tone: 'good' },
+  { key: 'overdue', label: 'Missed', tone: 'crit' },
 ];
 
 export default function Services() {
@@ -43,24 +43,24 @@ export default function Services() {
   return (
     <>
       <section className="grid g-4">
-        <StatTile label="Pekerjaan 7 hari" value={week.length} foot={`${week.filter((j) => j.status === 'done').length} selesai`} />
-        <StatTile label="Tingkat penyelesaian" value={`${doneRate.toFixed(0)}%`} foot="7 hari terakhir" />
-        <StatTile label="Biaya layanan" value={rupiah(weekCost, { compact: true })} foot="upah + material" />
+        <StatTile label="Jobs in 7 days" value={week.length} foot={`${week.filter((j) => j.status === 'done').length} completed`} />
+        <StatTile label="Completion rate" value={`${doneRate.toFixed(0)}%`} foot="last 7 days" />
+        <StatTile label="Service cost" value={rupiah(weekCost, { compact: true })} foot="labour + materials" />
         <StatTile
-          label="Terekam body cam"
+          label="Body-cam coverage"
           value={week.length ? `${Math.round((recorded / week.length) * 100)}%` : '—'}
-          foot={`${recorded} dari ${week.length} pekerjaan`}
+          foot={`${recorded} of ${week.length} jobs`}
         />
       </section>
 
       <Card>
-        <CardHead title="Papan pekerjaan" sub="Seret perhatian ke kolom terlewat lebih dulu">
-          <select className="select" value={propFilter} onChange={(e) => setPropFilter(e.target.value)} aria-label="Filter unit">
-            <option value="all">Semua unit</option>
+        <CardHead title="Job board" sub="Start with the missed column, then work left to right">
+          <select className="select" value={propFilter} onChange={(e) => setPropFilter(e.target.value)} aria-label="Filter by house">
+            <option value="all">All houses</option>
             {state.properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <div className="row-wrap">
-            <button className={`chip ${typeFilter === 'all' ? 'on' : ''}`} onClick={() => setTypeFilter('all')}>Semua</button>
+            <button className={`chip ${typeFilter === 'all' ? 'on' : ''}`} onClick={() => setTypeFilter('all')}>All</button>
             {(Object.keys(TYPE) as JobType[]).map((t) => (
               <button key={t} className={`chip ${typeFilter === t ? 'on' : ''}`} onClick={() => setTypeFilter(t)}>
                 <i className="swatch" style={{ background: TYPE[t].color }} />{TYPE[t].label}
@@ -81,7 +81,7 @@ export default function Services() {
                     <Badge tone={col.tone}>{col.label}</Badge>
                     <span className="spacer tiny muted num">{items.length}</span>
                   </div>
-                  {items.length === 0 && <p className="tiny muted" style={{ padding: '6px 4px' }}>Kosong</p>}
+                  {items.length === 0 && <p className="tiny muted" style={{ padding: '6px 4px' }}>Empty</p>}
                   {items.slice(0, 14).map((j) => {
                     const p = state.properties.find((x) => x.id === j.propertyId);
                     const s = state.staff.find((x) => x.id === j.staffId);
@@ -144,32 +144,32 @@ function JobDrawer({
     <Drawer
       open
       title={`${TYPE[job.type].label} · ${property?.name ?? ''}`}
-      sub={`${dateLabel(job.scheduledAt)} ${timeLabel(job.scheduledAt)} · ${job.durationMin} menit · ${relativeTime(job.scheduledAt)}`}
+      sub={`${dateLabel(job.scheduledAt)} ${timeLabel(job.scheduledAt)} · ${job.durationMin} min · ${relativeTime(job.scheduledAt)}`}
       onClose={onClose}
       footer={
         <>
           {job.status !== 'done' && (
             <button className="btn primary" onClick={() => { onStatus(job.id, 'done'); onClose(); }}>
-              <Icon name="check" size={14} /> Tandai selesai
+              <Icon name="check" size={14} /> Mark done
             </button>
           )}
           {job.status === 'scheduled' && (
-            <button className="btn" onClick={() => onStatus(job.id, 'in_progress')}><Icon name="play" size={13} /> Mulai</button>
+            <button className="btn" onClick={() => onStatus(job.id, 'in_progress')}><Icon name="play" size={13} /> Start</button>
           )}
           {job.status === 'done' && (
-            <button className="btn" onClick={() => onStatus(job.id, 'scheduled')}><Icon name="refresh" size={13} /> Buka lagi</button>
+            <button className="btn" onClick={() => onStatus(job.id, 'scheduled')}><Icon name="refresh" size={13} /> Reopen</button>
           )}
         </>
       }
     >
       <div className="grid g-2">
         <Card className="stat">
-          <span className="stat-label">Progres checklist</span>
+          <span className="stat-label">Checklist progress</span>
           <span className="stat-value">{done}/{job.checklist.length}</span>
-          <span className="stat-foot">{job.checklist.filter((c) => c.camVerified).length} langkah wajib bukti kamera</span>
+          <span className="stat-foot">{job.checklist.filter((c) => c.camVerified).length} steps need camera proof</span>
         </Card>
         <Card className="stat">
-          <span className="stat-label">Biaya pekerjaan</span>
+          <span className="stat-label">Job cost</span>
           <span className="stat-value">{rupiah(job.cost, { compact: true })}</span>
           <span className="stat-foot">{staff?.name} · {staff?.role}</span>
         </Card>
@@ -191,7 +191,7 @@ function JobDrawer({
                 <span className={`small ${c.done ? 'muted' : ''}`} style={{ textDecoration: c.done ? 'line-through' : undefined }}>
                   {c.label}
                 </span>
-                {c.camVerified && <Badge tone="info" icon="video">Bukti kamera</Badge>}
+                {c.camVerified && <Badge tone="info" icon="video">Camera proof</Badge>}
               </label>
             ))}
           </div>
@@ -199,15 +199,15 @@ function JobDrawer({
       </div>
 
       <div>
-        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="video" size={14} /> Rekaman body cam</div>
+        <div className="section-title" style={{ marginBottom: 8 }}><Icon name="video" size={14} /> Body-cam footage</div>
         <Card>
           {session ? (
             <div className="card-body col" style={{ gap: 10 }}>
               <div className="row">
                 <Badge tone={session.flagged ? 'warn' : 'good'} icon={session.flagged ? 'alert' : 'check'}>
-                  {session.flagged ? 'Ada anomali' : 'Bersih'}
+                  {session.flagged ? 'Anomaly found' : 'Clean'}
                 </Badge>
-                <span className="small muted spacer num">{session.clips} klip · {session.durationMin} menit</span>
+                <span className="small muted spacer num">{session.clips} clips · {session.durationMin} min</span>
               </div>
               <div className="timeline">
                 {session.events.map((e, i) => (
@@ -218,17 +218,17 @@ function JobDrawer({
                 ))}
               </div>
               <button className="btn" onClick={() => navigate('/monitoring')}>
-                <Icon name="video" size={14} /> Buka di monitoring
+                <Icon name="video" size={14} /> Open in monitoring
               </button>
             </div>
           ) : (
             <div className="card-body col" style={{ gap: 10 }}>
-              <Empty>Belum ada sesi rekaman untuk pekerjaan ini.</Empty>
+              <Empty>No recorded session for this job yet.</Empty>
               <span className="small muted row" style={{ gap: 6 }}>
                 <Icon name="video" size={14} />
-                {device ? `Perangkat ${device.label} terpasang pada ${staff?.name}.` : 'Petugas ini belum dipasangkan body cam.'}
+                {device ? `${device.label} is paired with ${staff?.name}.` : 'This person has no body cam paired.'}
               </span>
-              <button className="btn" onClick={() => navigate('/monitoring')}>Atur perangkat</button>
+              <button className="btn" onClick={() => navigate('/monitoring')}>Manage devices</button>
             </div>
           )}
         </Card>

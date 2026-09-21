@@ -7,20 +7,20 @@ export interface Property {
   name: string;
   area: string;
   city: string;
-  type: 'Villa' | 'Rumah' | 'Townhouse' | 'Bungalow';
+  type: 'Villa' | 'House' | 'Townhouse' | 'Bungalow';
   bedrooms: number;
   capacity: number;
   status: PropertyStatus;
   accent: number; // categorical slot 1-8
-  /** Harga dasar per malam (IDR) */
+  /** Base nightly rate (IDR) */
   basePrice: number;
-  /** Persentase kenaikan akhir pekan (Jum-Sab) */
+  /** Weekend uplift in percent (Fri–Sat) */
   weekendUpliftPct: number;
   cleaningFee: number;
   extraGuestFee: number;
   minStay: number;
   channels: Channel[];
-  /** Target okupansi bulanan yang dipatok owner (%) */
+  /** Monthly occupancy target set by the owner (%) */
   targetOccupancy: number;
 }
 
@@ -30,7 +30,7 @@ export interface Season {
   propertyId: string | 'all';
   startDate: string;
   endDate: string;
-  /** Pengali terhadap harga dasar, mis. 1.35 = +35% */
+  /** Multiplier on the base rate, e.g. 1.35 = +35% */
   multiplier: number;
   minStay: number;
   active: boolean;
@@ -48,26 +48,26 @@ export interface Booking {
   checkOut: string;
   nights: number;
   guests: number;
-  /** Total yang dibayar tamu sebelum potongan kanal */
+  /** Total the guest pays before channel commission */
   gross: number;
   channelFee: number;
   cleaningFee: number;
-  /** gross - channelFee, yang benar-benar masuk ke rekening owner */
+  /** gross - channelFee: what actually lands in the owner account */
   payout: number;
   status: BookingStatus;
 }
 
 export type ExpenseCategory =
-  | 'utilitas'
-  | 'kebersihan'
+  | 'utilities'
+  | 'cleaning'
   | 'laundry'
-  | 'perbaikan'
-  | 'perlengkapan'
-  | 'gaji'
+  | 'repairs'
+  | 'supplies'
+  | 'payroll'
   | 'internet'
-  | 'pajak'
-  | 'sewa_lahan'
-  | 'pemasaran';
+  | 'tax'
+  | 'ground_rent'
+  | 'marketing';
 
 export interface Expense {
   id: string;
@@ -87,7 +87,7 @@ export interface ChecklistItem {
   id: string;
   label: string;
   done: boolean;
-  /** menandai langkah yang wajib diverifikasi lewat body cam */
+  /** step that must be backed by body-cam footage */
   camVerified?: boolean;
 }
 
@@ -108,11 +108,18 @@ export interface ServiceJob {
 export interface Staff {
   id: string;
   name: string;
-  role: 'Cleaning' | 'Laundry' | 'Teknisi' | 'Supervisor';
+  role: StaffRole;
   phone: string;
   rating: number;
   jobsThisMonth: number;
+  /** Houses this person is responsible for — the coverage roster. */
+  assignedPropertyIds: string[];
+  /** Flat fee paid per completed cleaning job (IDR). */
+  ratePerJob: number;
+  onTimePct: number;
 }
+
+export type StaffRole = 'Cleaner' | 'Laundry' | 'Technician' | 'Supervisor';
 
 export type DeviceStatus = 'online' | 'offline' | 'charging';
 
